@@ -1,0 +1,2 @@
+# BuildMyOwnOS
+A little practice :)
