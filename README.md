@@ -1,2 +1,2 @@
-# BuildMyOwnOS
+# BuildMyOwnShell
 A little practice :)
