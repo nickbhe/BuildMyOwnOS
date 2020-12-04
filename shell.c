@@ -2,21 +2,23 @@
 #include <stdio.h>
 #include <string.h>
 
-char** split_to_tokens(char *line) {
+void split_to_tokens(char *line, char** returnTokens) {
   int lineLength = strlen(line);
   char lineCopy[lineLength];
   strcpy(lineCopy, line);
   char *saveptr;
   int tokenAmount = 0;
+  int tokensAllocationSize = 0;
 
   char* tmp = strtok_r(lineCopy, " ", &saveptr);
   while ((tmp != NULL && strcmp(tmp, "\n") != 0)) {
     tokenAmount++;
+    tokensAllocationSize += strlen(tmp);
     tmp = strtok_r(NULL, " ", &saveptr);
   }
 
   if(tokenAmount == 0) {
-    return NULL;
+    returnTokens = NULL;
   } else {
     char *tokens[tokenAmount];
     strcpy(lineCopy, line);
@@ -25,21 +27,21 @@ char** split_to_tokens(char *line) {
     for(int tokenCount = 1; tokenCount < tokenAmount; tokenCount++) {
       tokens[tokenCount] = strtok_r(NULL, " ", &saveptr);
     }
-    
-    return tokens;
+
+    returnTokens = tokens;
   }
 }
 
 void shsh_loop() {
-  char *line = NULL;
-  int capacity = 0;
-  int tokenAmount;
-  
   while(1) {
+    char *line = NULL;
+    size_t capacity = 0;
+    char **tokens;
+
     printf("\u2660 -> ");
     getline(&line, &capacity, stdin);
     
-    split_to_tokens(line);
+    split_to_tokens(line, tokens);
   }
 }
 
