@@ -2,32 +2,38 @@
 #include <stdio.h>
 #include <string.h>
 
-void split_to_tokens(char *line) {
-  char *tmp = line;
-  int tokenAmount = 1;
-  char previousCharacter = NULL;
-  
-  while(*tmp) {
-    if(*tmp == ' ' && previousCharacter != ' ') {
-      tokenAmount++;
+char** split_to_tokens(char *line) {
+  int lineLength = strlen(line);
+  char lineCopy[lineLength];
+  strcpy(lineCopy, line);
+  char *saveptr;
+  int tokenAmount = 0;
+
+  char* tmp = strtok_r(lineCopy, " ", &saveptr);
+  while ((tmp != NULL && strcmp(tmp, "\n") != 0)) {
+    tokenAmount++;
+    tmp = strtok_r(NULL, " ", &saveptr);
+  }
+
+  if(tokenAmount == 0) {
+    return NULL;
+  } else {
+    char *tokens[tokenAmount];
+    strcpy(lineCopy, line);
+
+    tokens[0] = strtok_r(lineCopy, " ", &saveptr);
+    for(int tokenCount = 1; tokenCount < tokenAmount; tokenCount++) {
+      tokens[tokenCount] = strtok_r(NULL, " ", &saveptr);
     }
     
-    printf("%s", *tmp);
-    previousCharacter = *tmp;
-    tmp++;
+    return tokens;
   }
- 
-
-  char **tokens;
-  int tokenIndex = 0;
-  
 }
 
 void shsh_loop() {
   char *line = NULL;
   int capacity = 0;
   int tokenAmount;
-  char previousCharacter = NULL;
   
   while(1) {
     printf("\u2660 -> ");
