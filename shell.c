@@ -3,31 +3,44 @@
 #include <stdio.h>
 #include <string.h>
 
-void split_to_tokens(char *line, char*** returnTokens) {
-  int lineLength = strlen(line);
-  char lineCopy[lineLength];
-  strcpy(lineCopy, line);
-  char *saveptr;
-  int tokenAmount = 0;
+#define TOKEN_BUFSIZE 64
+#define TOKEN_DELIM " \n\a\r\t"
+void split_to_tokens(char *line) {
+  int buffer = TOKEN_BUFSIZE;
+  char **tokens = malloc(buffer * sizeof(char*));
 
-  char* tmp = strtok_r(lineCopy, " ", &saveptr);
-  while ((tmp != NULL && strcmp(tmp, "\n") != 0)) {
-    tokenAmount++;
-    tmp = strtok_r(NULL, " ", &saveptr);
+  if (!tokens) {
+    printf("shsh: Allocation Failure");
+    exit(EXIT_FAILURE);
   }
 
-  if(tokenAmount == 0) {
-    returnTokens = NULL;
+  char lineCopy[strlen(line)];
+  strcpy(lineCopy, line);
+  char *saveptr;
+  char *token = strtok_r(lineCopy, TOKEN_DELIM, &saveptr);
+  
+  if(token == NULL) {
+    *returnTokens = NULL;
   } else {
-    char *tokens[tokenAmount];
-    strcpy(lineCopy, line);
+    int tokenAmount = 0;
 
-    tokens[0] = strtok_r(lineCopy, " ", &saveptr);
-    for(int tokenCount = 1; tokenCount < tokenAmount; tokenCount++) {
-      tokens[tokenCount] = strtok_r(NULL, " ", &saveptr);
+    while(token != NULL) {
+      tokens[tokenAmount] = token;
+      tokenAmount++;
+      
+      if(tokenAmount >= TOKEN_BUFSIZE) {
+        buffer += TOKEN_BUFSIZE;
+        tokens = realloc(tokens, buffer * sizeof(char*));
+        if(!tokens) {
+          printf("shsh: Reallocation Failure");
+          exit(EXIT_FAILURE);
+        }
+      }
+
+      token = strtok_r(NULL, TOKEN_DELIM, &saveptr);
     }
 
-    printf("hi");
+    tokens[tokenAmount] = NULL;
     *returnTokens = tokens;
   }
 }
@@ -41,11 +54,11 @@ void shsh_loop() {
     printf("\u2660 -> ");
     getline(&line, &capacity, stdin);
     split_to_tokens(line, &tokens);
-
+    
     if(tokens == NULL) {
       printf("No Input was provided");
     } else {
-      execvp(tokens[0], tokens);
+      printf("%s %s %s", tokens[0], tokens[1], tokens[2]);
     }
   }
 }
