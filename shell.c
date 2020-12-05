@@ -5,7 +5,7 @@
 
 #define TOKEN_BUFSIZE 64
 #define TOKEN_DELIM " \n\a\r\t"
-void split_to_tokens(char *line) {
+void split_to_tokens(char *line, char*** returnTokens) {
   int buffer = TOKEN_BUFSIZE;
   char **tokens = malloc(buffer * sizeof(char*));
 
@@ -14,10 +14,8 @@ void split_to_tokens(char *line) {
     exit(EXIT_FAILURE);
   }
 
-  char lineCopy[strlen(line)];
-  strcpy(lineCopy, line);
   char *saveptr;
-  char *token = strtok_r(lineCopy, TOKEN_DELIM, &saveptr);
+  char *token = strtok_r(line, TOKEN_DELIM, &saveptr);
   
   if(token == NULL) {
     *returnTokens = NULL;
