@@ -11,7 +11,7 @@ void shsh_read_line(char **returnLine) {
     if (feof(stdin)) {
       exit(EXIT_SUCCESS); 
     } else {
-      perror("shsh: Readline Failure");
+      perror("shsh");
       exit(EXIT_FAILURE);
     }
   } else {
@@ -26,7 +26,7 @@ void shsh_split_to_tokens(char *line, char ***returnTokens) {
   char **tokens = malloc(buffer * sizeof(char*));
 
   if (!tokens) {
-    printf("shsh: Allocation Failure");
+    printf(stderr, "shsh: Allocation Failure\n");
     exit(EXIT_FAILURE);
   }
 
@@ -68,11 +68,14 @@ void shsh_loop() {
     shsh_read_line(&line);
     shsh_split_to_tokens(line, &tokens);
     
-    if (tokens == NULL) {
-      printf("No Input was provided");
-    } else {
-      execvp(tokens[0], tokens);
+    int pid = fork();
+    if(pid == 0) {
+      if(execvp(tokens[0], tokens) == -1) {
+        perror("shsh");
+      }
     }
+
+    wait(NULL);
   }
 }
 
