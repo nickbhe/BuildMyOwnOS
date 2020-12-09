@@ -6,19 +6,26 @@
 #include <sys/wait.h>
 
 bool shsh_cd(char **args);
+bool shsh_exit(char **args);
 
 static const char *BUILTIN_NAMES[] = {
-  "cd"
+  "cd",
+  "exit"
 };
 
 static const bool (*BUILTIN_FUNCTIONS[]) (char**) = {
-  &shsh_cd
+  &shsh_cd,
+  &shsh_exit
 };
 
-bool shsh_cd(char ** args) {
+bool shsh_cd(char **args) {
   chdir(args[1]);
 
   return true;
+}
+
+bool shsh_exit(char **args) {
+  return false;
 }
 
 void shsh_read_line(char **returnLine) {
@@ -77,40 +84,41 @@ void shsh_split_to_tokens(char *line, char ***returnTokens) {
   }
 }
 
-bool execute_builtin(char **tokens) {
+bool shsh_execute(char **args) {
   int length = sizeof(BUILTIN_NAMES) / sizeof(BUILTIN_NAMES[0]);
 
   for (int builtinsIndex = 0; builtinsIndex < length; builtinsIndex++) {
-    if (!strcmp(tokens[0], BUILTIN_NAMES[builtinsIndex])) {
-      return (*BUILTIN_FUNCTIONS[builtinsIndex])(tokens);
+    if (!strcmp(args[0], BUILTIN_NAMES[builtinsIndex])) {
+      return (*BUILTIN_FUNCTIONS[builtinsIndex])(args);
     }
   }
 
-  return false;
+  int pid = fork();
+      
+  if (pid == 0) {
+    if (execvp(args[0], args) == -1) {
+      perror("shsh");
+    }
+  } else if (pid < 0) {
+    perror("shsh");
+  } else {
+    wait(NULL);
+  }
+
+  return true;
 }
 
 void shsh_loop() {
-  while (1) {
+  int status = true;
+
+  while (status) {
     char *line;
     char **tokens;
 
     printf("\u2660 -> ");
     shsh_read_line(&line);
     shsh_split_to_tokens(line, &tokens);
-    
-    if (!execute_builtin(tokens)) {
-      int pid = fork();
-      
-      if (pid == 0) {
-        if (execvp(tokens[0], tokens) == -1) {
-          perror("shsh");
-        }
-      } else if (pid < 0) {
-        perror("shsh");
-      } else {
-        wait(NULL);
-      }
-    }
+    status = shsh_execute(tokens); 
   }
 }
 
