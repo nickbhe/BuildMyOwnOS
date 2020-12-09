@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <sys/wait.h>
 
 enum builtins {
   CD
@@ -35,7 +36,7 @@ void shsh_split_to_tokens(char *line, char ***returnTokens) {
   char **tokens = malloc(buffer * sizeof(char*));
 
   if (!tokens) {
-    printf(stderr, "shsh: Allocation Failure\n");
+    fprintf(stderr, "%s", "shsh: Allocation Failure\n");
     exit(EXIT_FAILURE);
   }
 
@@ -101,9 +102,11 @@ void shsh_loop() {
         if (execvp(tokens[0], tokens) == -1) {
           perror("shsh");
         }
+      } else if (pid < 0) {
+        perror("shsh");
+      } else {
+        wait(NULL);
       }
-      
-      wait(NULL);
     }
   }
 }
