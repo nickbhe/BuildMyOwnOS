@@ -2,6 +2,15 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
+
+enum builtins {
+  CD
+};
+
+static const char *BUILTINS[] = {
+  "cd"
+};
 
 void shsh_read_line(char **returnLine) {
   char *line = NULL;
@@ -59,6 +68,23 @@ void shsh_split_to_tokens(char *line, char ***returnTokens) {
   }
 }
 
+bool execute_builtin(char **tokens) {
+  int length = sizeof(BUILTINS) / sizeof(BUILTINS[0]);
+
+  for (int builtinsIndex = 0; builtinsIndex < length; builtinsIndex++) {
+    if (!strcmp(tokens[0], BUILTINS[builtinsIndex])) {
+      switch (builtinsIndex) {
+        case CD:
+          chdir(tokens[1]);
+          break;
+      }
+      return true;
+    }
+  }
+
+  return false;
+}
+
 void shsh_loop() {
   while (1) {
     char *line;
@@ -68,19 +94,22 @@ void shsh_loop() {
     shsh_read_line(&line);
     shsh_split_to_tokens(line, &tokens);
     
-    int pid = fork();
-    if(pid == 0) {
-      if(execvp(tokens[0], tokens) == -1) {
-        perror("shsh");
+    if (!execute_builtin(tokens)) {
+      int pid = fork();
+      
+      if (pid == 0) {
+        if (execvp(tokens[0], tokens) == -1) {
+          perror("shsh");
+        }
       }
+      
+      wait(NULL);
     }
-
-    wait(NULL);
   }
 }
 
 int main(int argc, char **argv) {
   shsh_loop();
-  
+       
   return EXIT_SUCCESS;
 }
