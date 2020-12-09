@@ -5,13 +5,21 @@
 #include <stdbool.h>
 #include <sys/wait.h>
 
-enum builtins {
-  CD
-};
+bool shsh_cd(char **args);
 
-static const char *BUILTINS[] = {
+static const char *BUILTIN_NAMES[] = {
   "cd"
 };
+
+static const bool (*BUILTIN_FUNCTIONS[]) (char**) = {
+  &shsh_cd
+};
+
+bool shsh_cd(char ** args) {
+  chdir(args[1]);
+
+  return true;
+}
 
 void shsh_read_line(char **returnLine) {
   char *line = NULL;
@@ -70,16 +78,11 @@ void shsh_split_to_tokens(char *line, char ***returnTokens) {
 }
 
 bool execute_builtin(char **tokens) {
-  int length = sizeof(BUILTINS) / sizeof(BUILTINS[0]);
+  int length = sizeof(BUILTIN_NAMES) / sizeof(BUILTIN_NAMES[0]);
 
   for (int builtinsIndex = 0; builtinsIndex < length; builtinsIndex++) {
-    if (!strcmp(tokens[0], BUILTINS[builtinsIndex])) {
-      switch (builtinsIndex) {
-        case CD:
-          chdir(tokens[1]);
-          break;
-      }
-      return true;
+    if (!strcmp(tokens[0], BUILTIN_NAMES[builtinsIndex])) {
+      return (*BUILTIN_FUNCTIONS[builtinsIndex])(tokens);
     }
   }
 
