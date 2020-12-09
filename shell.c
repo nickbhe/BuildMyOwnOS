@@ -7,15 +7,18 @@
 
 bool shsh_cd(char **args);
 bool shsh_exit(char **args);
+bool shsh_help(char **args);
 
 static const char *BUILTIN_NAMES[] = {
   "cd",
-  "exit"
+  "exit",
+  "help"
 };
 
 static const bool (*BUILTIN_FUNCTIONS[]) (char**) = {
   &shsh_cd,
-  &shsh_exit
+  &shsh_exit,
+  &shsh_help
 };
 
 bool shsh_cd(char **args) {
@@ -26,6 +29,11 @@ bool shsh_cd(char **args) {
 
 bool shsh_exit(char **args) {
   return false;
+}
+
+bool shsh_help(char **args) {
+  printf("--------------- Shrug Shell ---------------\n");
+  printf("The shell that will make you go ¯\\_(ツ)_/¯\n");
 }
 
 void shsh_read_line(char **returnLine) {
