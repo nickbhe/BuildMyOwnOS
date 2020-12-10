@@ -32,8 +32,8 @@ bool shsh_exit(char **args) {
 }
 
 bool shsh_help(char **args) {
-  printf("------------- Shrug Shell -------------\n");
-  printf("The shell that makes you go ¯\\_(ツ)_/¯\n");
+  printf("\n------------- Shrug Shell -------------\n");
+  printf("The shell that makes you go ¯\\_(ツ)_/¯\n\n");
 
   return true;
 }
@@ -110,8 +110,8 @@ void shsh_split_to_tokens(char *line, char ***returnTokens) {
   }
 }
 
-bool shsh_execute(char **args) {
-  int length = sizeof(BUILTIN_NAMES) / sizeof(BUILTIN_NAMES[0]);
+bool shsh_execute_command(char **args) {
+  const int length = sizeof(BUILTIN_NAMES) / sizeof(BUILTIN_NAMES[0]);
 
   for (int builtinsIndex = 0; builtinsIndex < length; builtinsIndex++) {
     if (!strcmp(args[0], BUILTIN_NAMES[builtinsIndex])) {
@@ -120,7 +120,8 @@ bool shsh_execute(char **args) {
   }
 
   pid_t pid = fork();
-      
+  int status;
+
   if (pid == 0) {
     if (execvp(args[0], args) == -1) {
       perror("shsh");
@@ -130,13 +131,53 @@ bool shsh_execute(char **args) {
     perror("shsh");
   } else {
     pid_t wpid;
-    int status;
     do {
       wpid = waitpid(pid, &status, WUNTRACED);
     } while (!WIFEXITED(status) && !WIFSIGNALED(status));
   }
 
-  return true;
+  return !status;
+}
+
+bool shsh_execute(char **tokens) {
+  const int tokenAmount = sizeof(tokens) / sizeof(toknes[0]);
+  int prevStartIndex = 0;
+  int tokenIndex;
+  bool delimFound = false;
+  bool delimCondition = NULL;
+  bool status;
+
+  for (tokenIndex = 0; tokenIndex < tokenAmount; tokenIndex++) {
+    if (!strcmp(tokens[tokenIndex], ";")) {
+      delimFound = true;
+    } else if (!strcmp(tokens[tokenIndex], "&&") {
+      delimFound = true;
+      delimCondition = true;
+    } else if (!strcmp(tokens[tokenIndex], "||") {
+      delimFound = true;
+      delimCondition = false;
+    }
+
+    if (delimFound || tokenIndex + 1 == tokenAmount) {
+      int mallocSize = tokenIndex - prevStartIndex;
+      char **args = malloc(mallocSize * sizeof(char*));
+      memcpy(args, tokens + prevStartIndex, mallocSize);
+      status = shsh_execute_command(args);
+      
+      if (delimCondition != NULL) {
+        if (status || delimCondition) {
+          break;
+        }
+
+        delimCondition = NULL;
+      }
+
+      prevStartIndex = tokenIndex + 1;
+      delimFound = false;
+    }
+  }
+
+  return status;
 }
 
 void shsh_loop() {
