@@ -32,8 +32,10 @@ bool shsh_exit(char **args) {
 }
 
 bool shsh_help(char **args) {
-  printf("--------------- Shrug Shell ---------------\n");
-  printf("The shell that will make you go ¯\\_(ツ)_/¯\n");
+  printf("------------- Shrug Shell -------------\n");
+  printf("The shell that makes you go ¯\\_(ツ)_/¯\n");
+
+  return true;
 }
 
 void shsh_read_line(char **returnLine) {
@@ -100,17 +102,22 @@ bool shsh_execute(char **args) {
       return (*BUILTIN_FUNCTIONS[builtinsIndex])(args);
     }
   }
-
-  int pid = fork();
+  
+  pid_t pid = fork();
       
   if (pid == 0) {
     if (execvp(args[0], args) == -1) {
       perror("shsh");
     }
+    exit(EXIT_FAILURE);
   } else if (pid < 0) {
     perror("shsh");
   } else {
-    wait(NULL);
+    pid_t wpid;
+    int status;
+    do {
+      wpid = waitpid(pid, &status, WUNTRACED);
+    } while (!WIFEXITED(status) && !WIFSIGNALED(status));
   }
 
   return true;
@@ -126,7 +133,7 @@ void shsh_loop() {
     printf("\u2660 -> ");
     shsh_read_line(&line);
     shsh_split_to_tokens(line, &tokens);
-    status = shsh_execute(tokens); 
+    status = shsh_execute(tokens);
   }
 }
 
