@@ -53,7 +53,7 @@ void shsh_print_prompt() {
 }
 
 void shsh_read_line(char **returnLine) {
-  char *line = NULL;
+  char *line;
   size_t capacity = 0;
 
   if (getline(&line, &capacity, stdin) == -1) {
@@ -63,6 +63,8 @@ void shsh_read_line(char **returnLine) {
       perror("shsh");
       exit(EXIT_FAILURE);
     }
+  } else if (strlen(line) == 1) {
+      *returnLine = NULL;
   } else {
     *returnLine = line;
   }
@@ -146,8 +148,10 @@ void shsh_loop() {
     
     shsh_print_prompt();
     shsh_read_line(&line);
-    shsh_split_to_tokens(line, &tokens);
-    status = shsh_execute(tokens);
+    if (line != NULL) {
+      shsh_split_to_tokens(line, &tokens);
+      status = shsh_execute(tokens);
+    }
   }
 }
 
