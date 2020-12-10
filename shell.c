@@ -38,6 +38,20 @@ bool shsh_help(char **args) {
   return true;
 }
 
+#define PATH_MAX 1024
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+void shsh_print_prompt() {
+  char cwd[PATH_MAX];
+  if (getcwd(cwd, PATH_MAX) != NULL) {
+    printf("[" ANSI_COLOR_CYAN "%s" ANSI_COLOR_RESET "]", cwd);
+    printf(ANSI_COLOR_GREEN "\u00d8 " ANSI_COLOR_RESET);
+   } else {
+    perror("getcwd error");
+   }
+}
+
 void shsh_read_line(char **returnLine) {
   char *line = NULL;
   size_t capacity = 0;
@@ -102,7 +116,7 @@ bool shsh_execute(char **args) {
       return (*BUILTIN_FUNCTIONS[builtinsIndex])(args);
     }
   }
-  
+
   pid_t pid = fork();
       
   if (pid == 0) {
@@ -129,8 +143,8 @@ void shsh_loop() {
   while (status) {
     char *line;
     char **tokens;
-
-    printf("\u2660 -> ");
+    
+    shsh_print_prompt();
     shsh_read_line(&line);
     shsh_split_to_tokens(line, &tokens);
     status = shsh_execute(tokens);
