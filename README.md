@@ -6,3 +6,4 @@ I first write my own implementation, then compare and improve.
 ## Sources:
 - [kamalmarhubi / shell-workshop](https://github.com/kamalmarhubi/shell-workshop)
 - [Stephen Brennan - Write a Shell in C](https://brennan.io/2015/01/16/write-a-shell-in-c/)
+- [tokenrove / build-your-own-shell](https://github.com/tokenrove/build-your-own-shell)
