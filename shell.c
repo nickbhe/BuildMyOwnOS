@@ -126,7 +126,7 @@ bool shsh_execute_command(char **args) {
     if (execvp(args[0], args) == -1) {
       perror("shsh");
     }
-    exit(EXIT_FAILURE);
+    exit(EXIT_SUCCESS);
   } else if (pid < 0) {
     perror("shsh");
   } else {
@@ -140,28 +140,36 @@ bool shsh_execute_command(char **args) {
 }
 
 bool shsh_execute(char **tokens) {
-  const int tokenAmount = sizeof(tokens) / sizeof(toknes[0]);
   int prevStartIndex = 0;
-  int tokenIndex;
+  int tokenIndex = -1;
   bool delimFound = false;
   bool delimCondition = NULL;
   bool status;
 
-  for (tokenIndex = 0; tokenIndex < tokenAmount; tokenIndex++) {
-    if (!strcmp(tokens[tokenIndex], ";")) {
+  while (tokens[tokenIndex] != NULL) {
+    tokenIndex++;
+
+    if (tokens[tokenIndex] == NULL) {
       delimFound = true;
-    } else if (!strcmp(tokens[tokenIndex], "&&") {
+      if (tokenIndex == prevStartIndex)
+        break;
+    } else if(!strcmp(tokens[tokenIndex], ";")) {
       delimFound = true;
-      delimCondition = true;
-    } else if (!strcmp(tokens[tokenIndex], "||") {
+    } else if (!strcmp(tokens[tokenIndex], "&&")) {
       delimFound = true;
       delimCondition = false;
+    } else if (!strcmp(tokens[tokenIndex], "||")) {
+      delimFound = true;
+      delimCondition = true;
     }
 
-    if (delimFound || tokenIndex + 1 == tokenAmount) {
-      int mallocSize = tokenIndex - prevStartIndex;
+    if (delimFound) {
+      int mallocSize = tokenIndex - prevStartIndex + 1;
+      if (mallocSize == 1)
+        mallocSize = 2;
       char **args = malloc(mallocSize * sizeof(char*));
-      memcpy(args, tokens + prevStartIndex, mallocSize);
+      memcpy(args, tokens + prevStartIndex, (mallocSize - 1) * sizeof(char*));
+      args[mallocSize - 1] = NULL;
       status = shsh_execute_command(args);
       
       if (delimCondition != NULL) {
