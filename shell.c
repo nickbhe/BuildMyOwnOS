@@ -27,8 +27,9 @@ bool shsh_cd(char **args) {
   return true;
 }
 
+#define EXIT_CODE -1
 bool shsh_exit(char **args) {
-  return false;
+  return EXIT_CODE;
 }
 
 bool shsh_help(char **args) {
@@ -142,8 +143,9 @@ bool shsh_execute_command(char **args) {
 bool shsh_execute(char **tokens) {
   int prevStartIndex = 0;
   int tokenIndex = -1;
+  bool conditionalDelimFound = false;
   bool delimFound = false;
-  bool delimCondition = NULL;
+  bool delimCondition = false;
   bool status;
 
   while (tokens[tokenIndex] != NULL) {
@@ -156,14 +158,14 @@ bool shsh_execute(char **tokens) {
     } else if(!strcmp(tokens[tokenIndex], ";")) {
       delimFound = true;
     } else if (!strcmp(tokens[tokenIndex], "&&")) {
-      delimFound = true;
+      conditionalDelimFound = true;
       delimCondition = false;
     } else if (!strcmp(tokens[tokenIndex], "||")) {
-      delimFound = true;
+      conditionalDelimFound = true;
       delimCondition = true;
     }
 
-    if (delimFound) {
+    if (delimFound || conditionalDelimFound) {
       int mallocSize = tokenIndex - prevStartIndex + 1;
       if (mallocSize == 1)
         mallocSize = 2;
@@ -172,16 +174,15 @@ bool shsh_execute(char **tokens) {
       args[mallocSize - 1] = NULL;
       status = shsh_execute_command(args);
       
-      if (delimCondition != NULL) {
-        if (status || delimCondition) {
-          break;
-        }
-
-        delimCondition = NULL;
-      }
+      if (conditionalDelimFound) {
+       if (status == delimCondition) {
+         break;
+       } 
+      } 
 
       prevStartIndex = tokenIndex + 1;
       delimFound = false;
+      conditionalDelimFound = false;
     }
   }
 
@@ -191,7 +192,7 @@ bool shsh_execute(char **tokens) {
 void shsh_loop() {
   int status = true;
 
-  while (status) {
+  while (status != EXIT_CODE) {
     char *line;
     char **tokens;
     
