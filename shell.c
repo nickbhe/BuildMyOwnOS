@@ -8,17 +8,20 @@
 int shsh_cd(char **args);
 int shsh_exit(char **args);
 int shsh_help(char **args);
+int shsh_exec(char ** args);
 
 static const char *BUILTIN_NAMES[] = {
   "cd",
   "exit",
-  "help"
+  "help",
+  "exec"
 };
 
 static const int (*BUILTIN_FUNCTIONS[]) (char**) = {
   &shsh_cd,
   &shsh_exit,
-  &shsh_help
+  &shsh_help,
+  &shsh_exec
 };
 
 int shsh_cd(char **args) {
@@ -37,6 +40,15 @@ int shsh_help(char **args) {
   printf("The shell that makes you go ¯\\_(ツ)_/¯\n\n");
 
   return 1;
+}
+
+int shsh_exec(char **args) {
+  if (execvp(args[1], args + 1) == -1) {
+    perror("shsh");
+    exit(EXIT_FAILURE);
+  } else {
+    exit(EXIT_SUCCESS);
+  }
 }
 
 #define PATH_MAX 1024
