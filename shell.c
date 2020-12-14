@@ -5,9 +5,9 @@
 #include <stdbool.h>
 #include <sys/wait.h>
 
-bool shsh_cd(char **args);
-bool shsh_exit(char **args);
-bool shsh_help(char **args);
+int shsh_cd(char **args);
+int shsh_exit(char **args);
+int shsh_help(char **args);
 
 static const char *BUILTIN_NAMES[] = {
   "cd",
@@ -15,28 +15,28 @@ static const char *BUILTIN_NAMES[] = {
   "help"
 };
 
-static const bool (*BUILTIN_FUNCTIONS[]) (char**) = {
+static const int (*BUILTIN_FUNCTIONS[]) (char**) = {
   &shsh_cd,
   &shsh_exit,
   &shsh_help
 };
 
-bool shsh_cd(char **args) {
+int shsh_cd(char **args) {
   chdir(args[1]);
 
-  return true;
+  return 1;
 }
 
 #define EXIT_CODE -1
-bool shsh_exit(char **args) {
+int shsh_exit(char **args) {
   return EXIT_CODE;
 }
 
-bool shsh_help(char **args) {
+int shsh_help(char **args) {
   printf("\n------------- Shrug Shell -------------\n");
   printf("The shell that makes you go ¯\\_(ツ)_/¯\n\n");
 
-  return true;
+  return 1;
 }
 
 #define PATH_MAX 1024
@@ -111,7 +111,7 @@ void shsh_split_to_tokens(char *line, char ***returnTokens) {
   }
 }
 
-bool shsh_execute_command(char **args) {
+int shsh_execute_command(char **args) {
   const int length = sizeof(BUILTIN_NAMES) / sizeof(BUILTIN_NAMES[0]);
 
   for (int builtinsIndex = 0; builtinsIndex < length; builtinsIndex++) {
@@ -126,8 +126,10 @@ bool shsh_execute_command(char **args) {
   if (pid == 0) {
     if (execvp(args[0], args) == -1) {
       perror("shsh");
+      exit(EXIT_FAILURE);
+    } else {
+      exit(EXIT_SUCCESS);
     }
-    exit(EXIT_SUCCESS);
   } else if (pid < 0) {
     perror("shsh");
   } else {
@@ -135,18 +137,21 @@ bool shsh_execute_command(char **args) {
     do {
       wpid = waitpid(pid, &status, WUNTRACED);
     } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+    if (WIFEXITED(status))
+      printf("%d", WEXITSTATUS(status));
+    status = !status;
   }
 
-  return !status;
+  return status;
 }
 
-bool shsh_execute(char **tokens) {
+int shsh_execute(char **tokens) {
   int prevStartIndex = 0;
   int tokenIndex = -1;
   bool conditionalDelimFound = false;
   bool delimFound = false;
   bool delimCondition = false;
-  bool status;
+  int status;
 
   while (tokens[tokenIndex] != NULL) {
     tokenIndex++;
@@ -190,7 +195,7 @@ bool shsh_execute(char **tokens) {
 }
 
 void shsh_loop() {
-  int status = true;
+  int status = 1;
 
   while (status != EXIT_CODE) {
     char *line;
