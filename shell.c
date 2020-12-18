@@ -83,8 +83,28 @@ void shsh_read_line(char **returnLine) {
   }
 }
 
+void shsh_continue_read_lines(char** returnLine) {
+  char *line = *returnLine;
+  int lineLength = strlen(line);
+  while(strcmp(&line[lineLength - 2], "\\\n") == 0 ||
+        strcmp(&line[lineLength - 3], "||\n") == 0 ||
+        strcmp(&line[lineLength - 3], "&&\n") == 0) {
+    printf("> ");
+    char *lineContinuation;
+    shsh_read_line(&lineContinuation);
+    
+    if (strcmp(&line[lineLength - 2], "\\\n") == 0) {
+      strcpy(line + lineLength - 2, lineContinuation);
+    } else {
+      strcpy(line + lineLength - 1, lineContinuation);
+    }
+    
+    lineLength = strlen(line);
+  }
+}
+
 #define TOKEN_BUFSIZE 64
-#define TOKEN_DELIM " \n\a\r\t"
+#define TOKEN_DELIM "\r\a\n\t "
 void shsh_split_to_tokens(char *line, char ***returnTokens) {
   int buffer = TOKEN_BUFSIZE;
   char **tokens = malloc(buffer * sizeof(char*));
@@ -137,7 +157,7 @@ int shsh_execute_command(char **args) {
 
   if (pid == 0) {
     if (execvp(args[0], args) == -1) {
-      perror("shsh");
+      perror(args[0]);
       exit(EXIT_FAILURE);
     } else {
       exit(EXIT_SUCCESS);
@@ -149,8 +169,6 @@ int shsh_execute_command(char **args) {
     do {
       wpid = waitpid(pid, &status, WUNTRACED);
     } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-    if (WIFEXITED(status))
-      printf("%d", WEXITSTATUS(status));
     status = !status;
   }
 
@@ -216,6 +234,7 @@ void shsh_loop() {
     shsh_print_prompt();
     shsh_read_line(&line);
     if (line != NULL) {
+      shsh_continue_read_lines(&line);
       shsh_split_to_tokens(line, &tokens);
       status = shsh_execute(tokens);
     }
