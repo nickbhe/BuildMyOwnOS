@@ -65,7 +65,7 @@ void shsh_print_prompt() {
    }
 }
 
-void shsh_read_line(char **returnLine) {
+void shsh_read_lines(char **returnLine) {
   char *line;
   size_t capacity = 0;
 
@@ -79,27 +79,22 @@ void shsh_read_line(char **returnLine) {
   } else if (strlen(line) == 1) {
       *returnLine = NULL;
   } else {
-    *returnLine = line;
-  }
-}
-
-void shsh_continue_read_lines(char** returnLine) {
-  char *line = *returnLine;
-  int lineLength = strlen(line);
-  while(strcmp(&line[lineLength - 2], "\\\n") == 0 ||
+    int lineLength = strlen(line);
+    if (strcmp(&line[lineLength - 2], "\\\n") == 0 ||
         strcmp(&line[lineLength - 3], "||\n") == 0 ||
         strcmp(&line[lineLength - 3], "&&\n") == 0) {
-    printf("> ");
-    char *lineContinuation;
-    shsh_read_line(&lineContinuation);
-    
-    if (strcmp(&line[lineLength - 2], "\\\n") == 0) {
-      strcpy(line + lineLength - 2, lineContinuation);
-    } else {
-      strcpy(line + lineLength - 1, lineContinuation);
+          printf("> ");
+          char *lineContinuation;
+          shsh_read_lines(&lineContinuation);
+
+          if (strcmp(&line[lineLength - 2], "\\\n") == 0) {
+            strcpy(line + lineLength - 2, lineContinuation);
+          } else {
+            strcpy(line + lineLength - 1, lineContinuation);
+          }
     }
-    
-    lineLength = strlen(line);
+
+    *returnLine = line;
   }
 }
 
@@ -232,9 +227,8 @@ void shsh_loop() {
     char **tokens;
     
     shsh_print_prompt();
-    shsh_read_line(&line);
+    shsh_read_lines(&line);
     if (line != NULL) {
-      shsh_continue_read_lines(&line);
       shsh_split_to_tokens(line, &tokens);
       status = shsh_execute(tokens);
     }
