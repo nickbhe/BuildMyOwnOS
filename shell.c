@@ -170,57 +170,57 @@ int execute_command(char **args) {
   return status;
 }
 
+int execute_sub_tokens(char **tokens, int startIndex, int finishIndex) {
+      int mallocSize = finishIndex - startIndex + 1;
+      if (mallocSize == 1)
+        mallocSize = 2;
+      char **args = malloc(mallocSize * sizeof(char*));
+      memcpy(args, tokens + startIndex, (mallocSize - 1) * sizeof(char*));
+      args[mallocSize - 1] = NULL;
+      return execute_command(args);
+}
+
 int execute_tokens(char **tokens) {
   int prevStartIndex = 0;
-  int tokenIndex = -1;
+  int tokenIndex = 0;
   bool conditionalDelimFound = false;
-  bool delimFound = false;
   bool delimCondition = false;
-  int status;
+  int status = EXIT_FAILURE;
 
   while (tokens[tokenIndex] != NULL) {
-    tokenIndex++;
-
-    if (tokens[tokenIndex] == NULL) {
-      delimFound = true;
-      if (tokenIndex == prevStartIndex)
-        break;
-    } else if(!strcmp(tokens[tokenIndex], ";")) {
-      delimFound = true;
+    if(!strcmp(tokens[tokenIndex], ";")) {
+      status = execute_sub_tokens(tokens, prevStartIndex, tokenIndex);
+      prevStartIndex = tokenIndex + 1;
     } else if (!strcmp(tokens[tokenIndex], "&&")) {
+      status = execute_sub_tokens(tokens, prevStartIndex, tokenIndex);
       conditionalDelimFound = true;
       delimCondition = false;
     } else if (!strcmp(tokens[tokenIndex], "||")) {
+      status = execute_sub_tokens(tokens, prevStartIndex, tokenIndex);
       conditionalDelimFound = true;
       delimCondition = true;
     }
 
-    if (delimFound || conditionalDelimFound) {
-      int mallocSize = tokenIndex - prevStartIndex + 1;
-      if (mallocSize == 1)
-        mallocSize = 2;
-      char **args = malloc(mallocSize * sizeof(char*));
-      memcpy(args, tokens + prevStartIndex, (mallocSize - 1) * sizeof(char*));
-      args[mallocSize - 1] = NULL;
-      status = execute_command(args);
-      
-      if (conditionalDelimFound) {
-       if (status == delimCondition) {
-         break;
-       } 
-      } 
+    if (conditionalDelimFound) {
+      if (status == delimCondition)
+        break;
 
       prevStartIndex = tokenIndex + 1;
-      delimFound = false;
       conditionalDelimFound = false;
-    }
+    }    
+    
+    tokenIndex++;
+  }
+
+  if (tokens[tokenIndex] == NULL) {
+    if (tokenIndex != prevStartIndex)
+      status = execute_sub_tokens(tokens, prevStartIndex, tokenIndex);
   }
 
   return status;
 }
-
 void shsh_loop() {
-  int status = 1;
+  int status = EXIT_SUCCESS;
 
   while (status != EXIT_CODE) {
     char *line;
