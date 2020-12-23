@@ -55,7 +55,7 @@ int shsh_exec(char **args) {
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
-void shsh_print_prompt() {
+void print_prompt() {
   char cwd[PATH_MAX];
   if (getcwd(cwd, PATH_MAX) != NULL) {
     printf("[" ANSI_COLOR_CYAN "%s" ANSI_COLOR_RESET "]", cwd);
@@ -65,7 +65,7 @@ void shsh_print_prompt() {
    }
 }
 
-void shsh_read_lines(char **returnLine) {
+void read_lines(char **returnLine) {
   char *line;
   size_t capacity = 0;
 
@@ -85,7 +85,7 @@ void shsh_read_lines(char **returnLine) {
         strcmp(&line[lineLength - 3], "&&\n") == 0) {
           printf("> ");
           char *lineContinuation;
-          shsh_read_lines(&lineContinuation);
+          read_lines(&lineContinuation);
 
           if (strcmp(&line[lineLength - 2], "\\\n") == 0) {
             strcpy(line + lineLength - 2, lineContinuation);
@@ -100,7 +100,7 @@ void shsh_read_lines(char **returnLine) {
 
 #define TOKEN_BUFSIZE 64
 #define TOKEN_DELIM "\r\a\n\t "
-void shsh_split_to_tokens(char *line, char ***returnTokens) {
+void split_to_tokens(char *line, char ***returnTokens) {
   int buffer = TOKEN_BUFSIZE;
   char **tokens = malloc(buffer * sizeof(char*));
 
@@ -138,7 +138,7 @@ void shsh_split_to_tokens(char *line, char ***returnTokens) {
   }
 }
 
-int shsh_execute_command(char **args) {
+int execute_command(char **args) {
   const int length = sizeof(BUILTIN_NAMES) / sizeof(BUILTIN_NAMES[0]);
 
   for (int builtinsIndex = 0; builtinsIndex < length; builtinsIndex++) {
@@ -170,7 +170,7 @@ int shsh_execute_command(char **args) {
   return status;
 }
 
-int shsh_execute(char **tokens) {
+int execute_tokens(char **tokens) {
   int prevStartIndex = 0;
   int tokenIndex = -1;
   bool conditionalDelimFound = false;
@@ -202,7 +202,7 @@ int shsh_execute(char **tokens) {
       char **args = malloc(mallocSize * sizeof(char*));
       memcpy(args, tokens + prevStartIndex, (mallocSize - 1) * sizeof(char*));
       args[mallocSize - 1] = NULL;
-      status = shsh_execute_command(args);
+      status = execute_command(args);
       
       if (conditionalDelimFound) {
        if (status == delimCondition) {
@@ -226,11 +226,11 @@ void shsh_loop() {
     char *line;
     char **tokens;
     
-    shsh_print_prompt();
-    shsh_read_lines(&line);
+    print_prompt();
+    read_lines(&line);
     if (line != NULL) {
-      shsh_split_to_tokens(line, &tokens);
-      status = shsh_execute(tokens);
+      split_to_tokens(line, &tokens);
+      status = execute_tokens(tokens);
     }
   }
 }
