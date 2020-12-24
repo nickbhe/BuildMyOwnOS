@@ -118,8 +118,44 @@ void split_to_tokens(char *line, char ***returnTokens) {
     int tokenAmount = 0;
 
     while (token != NULL) {
-      tokens[tokenAmount] = token;
-      tokenAmount++;
+      int tokenInnerIndex = 0;
+      while (token[tokenInnerIndex] != '\0') {
+        if (token[tokenInnerIndex] == ';' ||
+            token[tokenInnerIndex] == '(' ||
+            token[tokenInnerIndex] == ')' ||
+            (token[tokenInnerIndex] == '|' && token[tokenInnerIndex + 1 ] == '|') ||
+            (token[tokenInnerIndex] == '&' && token[tokenInnerIndex + 1 ] == '&')) {
+          char *tmpToken = malloc((tokenInnerIndex + 4) * sizeof(char));
+          if(tokenInnerIndex != 0) {
+            strncpy(tmpToken, token, tokenInnerIndex);
+            tmpToken[tokenInnerIndex + 1] = '\0';
+            tokens[tokenAmount] = tmpToken;
+            tokenAmount++;
+          }
+
+          tmpToken[tokenInnerIndex + 2] = token[tokenInnerIndex];
+          if (token[tokenInnerIndex] == '|' || token[tokenInnerIndex] == '&') {
+            tmpToken[tokenInnerIndex + 3] = token[tokenInnerIndex + 1];
+            tmpToken[tokenInnerIndex + 4] = '\0';
+            token = token + tokenInnerIndex + 2;
+          } else {
+            tmpToken[tokenInnerIndex + 3] = '\0';
+            token = token + tokenInnerIndex + 1;
+          }
+
+          tokens[tokenAmount] = tmpToken + tokenInnerIndex + 2;
+          tokenAmount++;
+          
+          tokenInnerIndex = 0; 
+        } else {
+          tokenInnerIndex++;
+        }     
+      }
+
+      if (tokenInnerIndex != 0) {
+        tokens[tokenAmount] = token;
+        tokenAmount++;
+      }
       
       if (tokenAmount >= TOKEN_BUFSIZE) {
         buffer += TOKEN_BUFSIZE;
@@ -180,15 +216,19 @@ int execute_sub_tokens(char **tokens, int startIndex, int finishIndex) {
       return execute_command(args);
 }
 
+
+
 int execute_tokens(char **tokens) {
   int prevStartIndex = 0;
   int tokenIndex = 0;
   bool conditionalDelimFound = false;
   bool delimCondition = false;
-  int status = EXIT_FAILURE;
+  int status;
 
   while (tokens[tokenIndex] != NULL) {
-    if(!strcmp(tokens[tokenIndex], ";")) {
+    if (tokens[tokenIndex][0] == '(') {
+      
+    } else if(tokens[tokenIndex][0] == ';') {
       status = execute_sub_tokens(tokens, prevStartIndex, tokenIndex);
       prevStartIndex = tokenIndex + 1;
     } else if (!strcmp(tokens[tokenIndex], "&&")) {
