@@ -1,7 +1,14 @@
 # BuildMyOwnShell
-Practice C and understand Shell internals :)
+**Shrug Shell** - The shell that makes you go ¯\\_(ツ)_/¯
 
-I first write my own implementation, then compare and improve.
+Practice C and understand Shell internals ^_^
+
+### This atrocity includes
+- Some builtins [exec, cd, help, exit]
+- Command chaining and separation
+- subshells
+- Multi lines on backslash or list
+
 
 ## Sources:
 - [kamalmarhubi / shell-workshop](https://github.com/kamalmarhubi/shell-workshop)
