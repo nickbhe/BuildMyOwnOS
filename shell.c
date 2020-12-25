@@ -9,6 +9,7 @@ int shsh_cd(char **args);
 int shsh_exit(char **args);
 int shsh_help(char **args);
 int shsh_exec(char ** args);
+int execute_tokens(char **tokens);
 
 static const char *BUILTIN_NAMES[] = {
   "cd",
@@ -27,19 +28,18 @@ static const int (*BUILTIN_FUNCTIONS[]) (char**) = {
 int shsh_cd(char **args) {
   chdir(args[1]);
 
-  return 1;
+  return EXIT_SUCCESS;
 }
 
-#define EXIT_CODE -1
 int shsh_exit(char **args) {
-  return EXIT_CODE;
+  exit(EXIT_SUCCESS);
 }
 
 int shsh_help(char **args) {
   printf("\n------------- Shrug Shell -------------\n");
   printf("The shell that makes you go ¯\\_(ツ)_/¯\n\n");
 
-  return 1;
+  return EXIT_SUCCESS;
 }
 
 int shsh_exec(char **args) {
@@ -200,7 +200,32 @@ int execute_command(char **args) {
     do {
       wpid = waitpid(pid, &status, WUNTRACED);
     } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-    status = !status;
+    if (status > 1)
+      status = 1;
+  }
+
+  return status;
+}
+
+int execute_subshell(char **args) {
+  pid_t pid = fork();
+  int status;
+
+  if (pid == 0) {
+   if (execute_tokens(args)) {
+     exit(EXIT_SUCCESS);
+   } else {
+     exit(EXIT_FAILURE);
+   }
+  } else if (pid < 0) {
+    perror("shsh");
+  } else {
+    pid_t wpid;
+    do {
+      wpid = waitpid(pid, &status, WUNTRACED);
+    } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+    if (status > 1)
+      status = 1;
   }
 
   return status;
@@ -216,38 +241,52 @@ int execute_sub_tokens(char **tokens, int startIndex, int finishIndex) {
       return execute_command(args);
 }
 
-
-
 int execute_tokens(char **tokens) {
   int prevStartIndex = 0;
   int tokenIndex = 0;
   bool conditionalDelimFound = false;
   bool delimCondition = false;
+  bool didSubshellStart = false;
   int status;
 
   while (tokens[tokenIndex] != NULL) {
     if (tokens[tokenIndex][0] == '(') {
-      
-    } else if(tokens[tokenIndex][0] == ';') {
-      status = execute_sub_tokens(tokens, prevStartIndex, tokenIndex);
-      prevStartIndex = tokenIndex + 1;
-    } else if (!strcmp(tokens[tokenIndex], "&&")) {
-      status = execute_sub_tokens(tokens, prevStartIndex, tokenIndex);
-      conditionalDelimFound = true;
-      delimCondition = false;
-    } else if (!strcmp(tokens[tokenIndex], "||")) {
-      status = execute_sub_tokens(tokens, prevStartIndex, tokenIndex);
-      conditionalDelimFound = true;
-      delimCondition = true;
+      didSubshellStart = true;
+      status = execute_subshell(tokens + tokenIndex + 1);
+    } else if(tokens[tokenIndex][0] == ')') {
+      if (didSubshellStart) {
+        didSubshellStart = false;
+        prevStartIndex = tokenIndex + 1;
+      } else {
+        return execute_sub_tokens(tokens, prevStartIndex, tokenIndex);
+      }
+    } 
+    
+    if(!didSubshellStart) {
+      if (tokens[tokenIndex][0] == ';') {
+        if (tokenIndex != prevStartIndex) {
+          status = execute_sub_tokens(tokens, prevStartIndex, tokenIndex);
+        }
+        prevStartIndex = tokenIndex + 1;
+      } else if (!strcmp(tokens[tokenIndex], "&&")) {
+        conditionalDelimFound = true;
+        delimCondition = false;
+      } else if (!strcmp(tokens[tokenIndex], "||")) {
+        conditionalDelimFound = true;
+        delimCondition = true;
+      }
+
+      if (conditionalDelimFound) {
+        if (tokenIndex != prevStartIndex) {
+          status = execute_sub_tokens(tokens, prevStartIndex, tokenIndex);
+        }
+        if (status != delimCondition)
+          break;
+
+        prevStartIndex = tokenIndex + 1;
+        conditionalDelimFound = false;
+      }    
     }
-
-    if (conditionalDelimFound) {
-      if (status == delimCondition)
-        break;
-
-      prevStartIndex = tokenIndex + 1;
-      conditionalDelimFound = false;
-    }    
     
     tokenIndex++;
   }
@@ -259,10 +298,11 @@ int execute_tokens(char **tokens) {
 
   return status;
 }
+
 void shsh_loop() {
   int status = EXIT_SUCCESS;
 
-  while (status != EXIT_CODE) {
+  while (true) { 
     char *line;
     char **tokens;
     
